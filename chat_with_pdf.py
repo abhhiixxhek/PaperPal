@@ -42,16 +42,21 @@ def get_vector_store(text_chunks):
 def get_conversational_chain():
 
     prompt_template = """
-    Answer the question as detailed as possible from the provided context, make sure to provide all the details, if the answer is not in
-    provided context just say, "answer is not available in the context", don't provide the wrong answer\n\n
+    You are an intelligent AI assistant designed to answer questions based on the provided PDF content.  
+    Your responses should be **accurate, informative, and strictly based on the given context**.  
+
+    - **If the answer is fully available in the context, provide a well-structured, detailed, and clear response.**  
+    - **If the answer is partially available, state what is known and mention any missing details.**  
+    - **If the question is entirely out of scope and cannot be answered based on the given context, respond with: "The answer is not available in the provided context." Do not make up information.**  
+    - **Keep responses concise yet comprehensive, avoiding unnecessary speculation.**  
+    - **Use bullet points or numbered lists for clarity when needed.**\n\n
     Context:\n {context}?\n
     Question: \n{question}\n
 
     Answer:
     """
 
-    model = ChatGoogleGenerativeAI(model="gemini-pro",
-                             temperature=0.3)
+    model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.5)
 
     prompt = PromptTemplate(template = prompt_template, input_variables = ["context", "question"])
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)

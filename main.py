@@ -13,6 +13,9 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# 🚀 Move this line to the top before any Streamlit commands
+st.set_page_config(page_title="PaperPal 📄🤖", page_icon="📄", layout="wide")
+
 def get_pdf_text(pdf_docs):
     """Extract text from uploaded PDF files."""
     text = ""
@@ -37,19 +40,20 @@ def get_vector_store(text_chunks):
 def get_conversational_chain():
     """Create conversational chain for question answering."""
     prompt_template = """
-    You are an intelligent assistant trained to answer questions based on the given context.  
-    Provide a **concise yet comprehensive** response, ensuring clarity and relevance.  
-- **If the answer is fully available in the context, provide a well-structured, informative answer.**  
-- **If the answer is partially available, mention what is known and highlight missing details.**  
-- **If the answer is not in the context, state: "The answer is not available in the provided context." Do not attempt to make up an answer.**  
-- **Keep responses fact-based, avoiding speculation.**  
-- **Use bullet points or numbered lists for structured answers when necessary.**  
+    You are an intelligent AI assistant designed to answer questions based on the provided PDF content.  
+    Your responses should be **accurate, informative, and strictly based on the given context**.  
+
+    - **If the answer is fully available in the context, provide a well-structured, detailed, and clear response.**  
+    - **If the answer is partially available, state what is known and mention any missing details.**  
+    - **If the question is entirely out of scope and cannot be answered based on the given context, respond with: "The answer is not available in the provided context." Do not make up information.**  
+    - **Keep responses concise yet comprehensive, avoiding unnecessary speculation.**  
+    - **Use bullet points or numbered lists for clarity when needed.**   
 
     Context:\n {context}\n
     Question: \n{question}\n
     Answer:
     """
-    model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.3)
+    model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.5)
     prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     return chain
@@ -61,59 +65,57 @@ def user_input(user_question):
         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
         new_db = FAISS.load_local("faiss_index", embeddings)
 
-        
         # Perform similarity search
         docs = new_db.similarity_search(user_question)
-        
+
         # Get conversational chain
         chain = get_conversational_chain()
-        
+
         # Get response
         response = chain(
             {"input_documents": docs, "question": user_question}, 
             return_only_outputs=True
         )
-        
+
         # Display response
         st.write("Reply: ", response["output_text"])
-    
+
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
         st.error("Please upload PDFs and process them first.")
 
 def main():
-    """Main Streamlit application."""
-    st.set_page_config("Chat PDF", page_icon="📄")
-    st.header("Chat with PDF using Gemini 💁")
+    # Custom header with emoji
+    st.markdown("<h1 style='text-align: center;'>📄 PaperPal – Chat with Your PDFs 💡</h1>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center;'>Your AI-powered research assistant to extract insights effortlessly! 🚀</h4>", unsafe_allow_html=True)
 
     # Sidebar for PDF upload
     with st.sidebar:
-        st.title("Menu:")
-        pdf_docs = st.file_uploader("Upload your PDF Files", 
-                                    type=['pdf'], 
-                                    accept_multiple_files=True)
-        
-        if st.button("Process PDFs"):
+        st.markdown("## 📂 Upload PDFs")
+        pdf_docs = st.file_uploader("Drop your PDFs here!", type=['pdf'], accept_multiple_files=True)
+
+        if st.button("🚀 Process PDFs"):
             if pdf_docs:
-                with st.spinner("Processing PDFs..."):
-                    # Extract text from PDFs
-                    raw_text = get_pdf_text(pdf_docs)
-                    
-                    # Create text chunks
-                    text_chunks = get_text_chunks(raw_text)
-                    
-                    # Create vector store
-                    get_vector_store(text_chunks)
-                    
-                    st.success("PDFs processed successfully!")
+                with st.spinner("🔍 Analyzing your PDFs..."):
+                    raw_text = get_pdf_text(pdf_docs)  # Extract text
+                    text_chunks = get_text_chunks(raw_text)  # Chunk text
+                    get_vector_store(text_chunks)  # Store in vector DB
+                    st.success("✅ PDFs processed successfully! Ask away. 🎯")
             else:
-                st.warning("Please upload PDF files first.")
+                st.warning("⚠️ Please upload at least one PDF first.")
 
     # Main chat interface
-    user_question = st.text_input("Ask a question about your PDF:")
-    
+    st.markdown("---")
+    st.markdown("### 🤖 Ask PaperPal Anything About Your PDFs!")
+    user_question = st.text_input("🔎 Type your question here...")
+
     if user_question:
+        st.markdown("📝 **Your Question:** " + user_question)
         user_input(user_question)
+
+    # Footer with credits
+    st.markdown("---")
+    st.markdown("<p style='text-align: center;'>🚀 Made with ❤️ by <b>Abhishek Kumar</b></p>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
